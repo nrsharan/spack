@@ -118,6 +118,7 @@ class Trilinos(CMakePackage, CudaPackage, ROCmPackage):
     variant("hypre", default=False, description="Compile with Hypre preconditioner")
     variant("mpi", default=True, description="Compile with MPI parallelism")
     variant("mumps", default=False, description="Compile with support for MUMPS solvers")
+    variant("pardiso", default=False, description="Compile with Pardiso solver")
     variant("suite-sparse", default=False, description="Compile with SuiteSparse solvers")
     variant("superlu-dist", default=False, description="Compile with SuperluDist solvers")
     variant("superlu", default=False, description="Compile with SuperLU solvers")
@@ -256,6 +257,9 @@ class Trilinos(CMakePackage, CudaPackage, ROCmPackage):
         conflicts("~tpetra")
         conflicts("@15: ~teko")
         conflicts("~nox")
+    with when("+pardiso"):
+        conflicts("+superlu-dist")
+        conflicts("+superlu")
 
     # Tpetra stack
     with when("~kokkos"):
@@ -429,6 +433,7 @@ class Trilinos(CMakePackage, CudaPackage, ROCmPackage):
     for plat in ["darwin", "linux"]:
         depends_on("hypre~internal-superlu~int64", when="+hypre platform=%s" % plat)
     depends_on("hypre-cmake~int64", when="+hypre platform=windows")
+    depends_on("intel-oneapi-mkl", when="+pardiso")
     depends_on("kokkos-nvcc-wrapper", when="+wrapper")
     depends_on("lapack")
     # depends_on('perl', type=('build',)) # TriBITS finds but doesn't use...
@@ -752,6 +757,9 @@ class Trilinos(CMakePackage, CudaPackage, ROCmPackage):
                 define_from_variant("Amesos2_ENABLE_Basker", "basker"),
                 define_from_variant("Amesos2_ENABLE_LAPACK", "amesos2"),
                 define_from_variant("Amesos2_ENABLE_MUMPS", "mumps"),
+                define_from_variant("Amesos2_ENABLE_PARDISO_MKL", "pardiso"),
+                define_from_variant("Trilinos_ENABLE_ShyLU_DD=ON", "shylu"),
+                define_from_variant("Trilinos_ENABLE_ShyLU_DDCore=ON", "shylu"),
             ]
         )
 
@@ -854,6 +862,8 @@ class Trilinos(CMakePackage, CudaPackage, ROCmPackage):
             ("HDF5", "hdf5", "hdf5"),
             ("HYPRE", "hypre", "hypre"),
             ("MUMPS", "mumps", "mumps"),
+            ("MKL", "pardiso", "intel-oneapi-mkl"),
+            ("PARDISO_MKL", "pardiso", "intel-oneapi-mkl"),
             ("AMD", "suite-sparse", "suite-sparse"),
             ("UMFPACK", "suite-sparse", "suite-sparse"),
             ("SuperLU", "superlu", "superlu"),
